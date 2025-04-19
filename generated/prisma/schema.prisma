@@ -1,0 +1,682 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  INSTRUCTOR
+  STUDENT
+}
+
+// Model untuk pengguna sistem
+model User {
+  id        String   @id @default(uuid())
+  username  String
+  email     String   @unique
+  password  String
+  firstName String
+  lastName  String
+  role      UserRole @default(STUDENT)
+  bio       String?  @db.Text
+  avatar    String?
+  phone     String?
+  address   String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relasi
+  enrollments         Enrollment[]
+  instructorCourses   Course[]
+  submissions         Submission[]
+  assigments          Assigment[]
+  createdContens      Content[]
+  notifications       Notification[]
+  discussions         Discussion[]
+  comments            Comment[]
+  quizAttempts        QuizAttempt[]
+  progressRecords     ProgressRecord[]
+  sentMessages        ChatMessage[]        @relation("SentMessages")
+  receivedMessages    ChatMessage[]        @relation("ReceivedMessages")
+  sessions            UserSession[]
+  chatParticipations  ChatParticipant[]
+  messageReadReceipts MessageReadReceipt[]
+  charRoomMessages    ChatRoomMessage[]
+  uploadMedia         Media[]
+  emailNotifications  EmailNotification[]
+  // apiKeys           ApiKey[]
+  // usageLogs         ApiUsageLog[]
+  // loginHistory      LoginHistory[]
+}
+
+enum CourseLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+  EXPERT
+}
+
+enum CourseStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+// Model kursus
+model Course {
+  id           String       @id @default(uuid())
+  title        String
+  slug         String       @unique
+  description  String       @db.Text
+  thumbnail    String?
+  level        CourseLevel  @default(BEGINNER)
+  ststus       CourseStatus @default(DRAFT)
+  price        Float?
+  duration     Int
+  instructorId String
+  instructor   User         @relation(fields: [instructorId], references: [id])
+  isPublished  Boolean      @default(false)
+  isApproved   Boolean      @default(false)
+  publishedAt  DateTime?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  // Relasi
+  modules          Module[]
+  enrollments      Enrollment[]
+  assigments       Assigment[]
+  categories       CategoriesOnCourse[]
+  discussions      Discussion[]
+  ratings          Rating[]
+  proggressRecords ProgressRecord[]
+}
+
+// Model untuk kategori kursus
+model Category {
+  id          String     @id @default(uuid())
+  name        String     @unique
+  slug        String     @unique
+  description String?    @db.Text
+  parentId    String?
+  parent      Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children    Category[] @relation("CategoryHierarchy")
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  // Relasi
+  courses CategoriesOnCourse[]
+}
+
+// Tabel junction untuk relasi many-to-many antara kursus dan kategori
+model CategoriesOnCourse {
+  courseId   String
+  categoryId String
+  course     Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  assignedAt DateTime @default(now())
+
+  @@id([courseId, categoryId])
+}
+
+// Model untuk modul dalam kursus
+model Module {
+  id          String   @id @default(uuid())
+  title       String
+  description String?  @db.Text
+  order       Int
+  isPublished Boolean  @default(false)
+  courseId    String
+  course      Course   @relation(fields: [courseId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relasi 
+  contents Content[]
+}
+
+enum ContentType {
+  VIDEO
+  DOCUMENT
+  QUIZ
+  ASSIGNMENT
+  PRESENTATION
+  TEXT
+  AUDIO
+  LINK
+}
+
+// Model untuk pembelajaran
+model Content {
+  id          String      @id @default(uuid())
+  title       String
+  type        ContentType
+  contentData String      @db.Text // JSON atau URL ke konten
+  duration    Int? // Durasi dalam menit (untuk video/audio)
+  order       Int
+  isPublished Boolean     @default(false)
+  moduleId    String
+  module      Module      @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  authorId    String
+  author      User        @relation(fields: [authorId], references: [id])
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  // Relasi
+  quizzes          Quiz?
+  proggressRecords ProgressRecord[]
+  media            Media[]          @relation("ContentMedia")
+}
+
+// Model untuk kuis
+model Quiz {
+  id           String   @id @default(uuid())
+  contentId    String   @unique
+  content      Content  @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  timeLimit    Int? // Dalam menit
+  passingScore Int      @default(60) // Persentase
+  maxAttempts  Int      @default(1)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relasi
+  questions Question[]
+  attemps   QuizAttempt[]
+}
+
+enum QuestionType {
+  MULTIPLE_CHOICE
+  SINGLE_CHOICE
+  TRUE_FALSE
+  SHORT_ANSWER
+  ESSAY
+}
+
+// Model untuk pertanyaan kuis
+model Question {
+  id            String       @id @default(uuid())
+  quizId        String
+  quiz          Quiz         @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  questionText  String       @db.Text
+  questiontype  QuestionType
+  options       Json? // untuk pilihan ganda : [{"id":1,"text":"Option 1"},{"id":2,"text":"Option 2"}]
+  correctAnswer String       @db.Text // Json untuk multiple choice: ["a", "c"] atau teks untuk jawaban terbuka
+  points        Int          @default(1)
+  order         Int
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  // Relasi
+  answers Answer[]
+}
+
+enum AttemptStatus {
+  IN_PROGRESS
+  COMPLETED
+  EXPIRED
+}
+
+// Model untuk percobaan kuis oleh siswa
+model QuizAttempt {
+  id          String        @id @default(uuid())
+  quizId      String
+  quiz        Quiz          @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User          @relation(fields: [userId], references: [id])
+  startedAt   DateTime      @default(now())
+  completedAt DateTime?
+  score       Float?
+  status      AttemptStatus @default(IN_PROGRESS)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  // Relasi
+  answers Answer[]
+}
+
+// Model untuk jawaban siswa
+model Answer {
+  id         String      @id @default(uuid())
+  attemptId  String
+  attempt    QuizAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  questionId String
+  question   Question    @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  answerText String?     @db.Text // JSON untuk multiple choice: ["a", "c"] atau teks untuk jawaban terbuka
+  isCorrect  Boolean? // Null jika belum di isi (untuk essay)
+  points     Float? // Null jika belum di nilai
+  feedback   String?     @db.Text
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+}
+
+enum EnrollmentStatus {
+  PENDING
+  ACTIVE
+  COMPLETED
+  DROPPED
+  EXPIRED
+}
+
+// Model untuk pendaftaran kursus
+model Enrollment {
+  id                String           @id @default(uuid())
+  userId            String
+  user              User             @relation(fields: [userId], references: [id])
+  courseId          String
+  course            Course           @relation(fields: [courseId], references: [id])
+  status            EnrollmentStatus @default(ACTIVE)
+  enrollmentDate    DateTime         @default(now())
+  completionDate    DateTime?
+  certificateIssued Boolean          @default(false)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  // Relasi
+  progressRecords ProgressRecord[]
+  certificate     Certificate?
+}
+
+// Model untuk tugas
+model Assigment {
+  id            String    @id @default(uuid())
+  title         String
+  description   String?   @db.Text
+  courseId      String
+  course        Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  creatorId     String
+  creator       User      @relation(fields: [creatorId], references: [id])
+  dueDate       DateTime?
+  pointPossible Float
+  instruction   String    @db.Text
+  attachment    Json? // URLs ke file terlampir
+  isPublished   Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relasi
+  submissions Submission[]
+  media       Media[]      @relation("AssigmentMedia")
+}
+
+enum SubmissionStatus {
+  DRAFT
+  SUBMITTED
+  LATE
+  GRADED
+  RETURNED
+}
+
+// Model untuk pengumpulan tugas
+model Submission {
+  id          String           @id @default(uuid())
+  assigmentId String
+  assigment   Assigment        @relation(fields: [assigmentId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User             @relation(fields: [userId], references: [id])
+  content     String           @db.Text
+  attachment  Json? // URLs ke file terlampir
+  submittedAt DateTime         @default(now())
+  grade       Float?
+  feedback    String?          @db.Text
+  gradeAt     DateTime?
+  status      SubmissionStatus @default(SUBMITTED)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  // Relasi
+  media Media[] @relation("SubmissionMedia")
+}
+
+enum ProgressStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+}
+
+// Model untuk pencatatan progress siswa
+model ProgressRecord {
+  id             String         @id @default(uuid())
+  userId         String
+  user           User           @relation(fields: [userId], references: [id])
+  courseId       String
+  course         Course         @relation(fields: [courseId], references: [id])
+  contentId      String
+  content        Content        @relation(fields: [contentId], references: [id])
+  enrollmentId   String
+  enrollment     Enrollment     @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  status         ProgressStatus @default(NOT_STARTED)
+  progress       Float          @default(0) // Persentase penyelesaian (0 - 100)
+  timeSpent      Int            @default(0) // Durasi waktu yang dihabiskan (dalam detik)
+  lastAccessedAt DateTime?
+  completedAt    DateTime?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@unique([userId, contentId])
+}
+
+// Model untuk forum diskusi
+model Discussion {
+  id        String   @id @default(uuid())
+  title     String
+  content   String   @db.Text
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  courseId  String
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  isPinned  Boolean  @default(false)
+  isLocked  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relasi
+  comments Comment[]
+}
+
+// Model untuk komentar dalam diskusi
+model Comment {
+  id           String     @id @default(uuid())
+  content      String     @db.Text
+  userId       String
+  user         User       @relation(fields: [userId], references: [id])
+  discussionId String
+  discussion   Discussion @relation(fields: [discussionId], references: [id], onDelete: Cascade)
+  parentId     String?
+  parent       Comment?   @relation("CommentReplies", fields: [parentId], references: [id])
+  replies      Comment[]  @relation("CommentReplies")
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+}
+
+enum NotificationType {
+  COURSE_UPDATE
+  ASSIGNMENT_POSTED
+  GRADE_POSTED
+  DISCUSSION_REPLY
+  ENROLLMENT_CONFIRMED
+  NEW_MESSAGE
+  SYSTEM
+}
+
+// Model untuk notifikasi
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id])
+  type      NotificationType
+  title     String
+  message   String
+  isRead    Boolean          @default(false)
+  data      Json? // Data tambahan terkait notifikasi (ID Kursus, tugas, dll)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+}
+
+// Model untuk penilaian kursus
+model Rating {
+  id        String   @id @default(uuid())
+  courseId  String
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  userId    String   @unique
+  rating    Int // 1 - 5
+  review    String?  @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, courseId])
+}
+
+// Model untuk pesan chat
+model ChatMessage {
+  id         String    @id @default(uuid())
+  content    String    @db.Text
+  senderId   String
+  sender     User      @relation("SentMessages", fields: [senderId], references: [id])
+  receiverId String
+  receiver   User      @relation("ReceivedMessages", fields: [receiverId], references: [id])
+  isRead     Boolean   @default(false)
+  readAt     DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+}
+
+enum ChatRoomType {
+  DIRECT
+  GROUP
+  COURSE
+}
+
+// Model untuk chat room (untuk group chat)
+model ChatRoom {
+  id        String       @id @default(uuid())
+  name      String
+  type      ChatRoomType @default(DIRECT)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  // Relasi
+  participants ChatParticipant[]
+  messages     ChatRoomMessage[]
+}
+
+// Model untuk pesan dalam chat room
+model ChatRoomMessage {
+  id         String   @id @default(uuid())
+  content    String   @db.Text
+  charRoomId String
+  chatRoom   ChatRoom @relation(fields: [charRoomId], references: [id], onDelete: Cascade)
+  senderId   String
+  sender     User     @relation(fields: [senderId], references: [id])
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relasi
+  readReceipts MessageReadReceipt[]
+}
+
+// Model untuk peserta dalam chat room
+model ChatParticipant {
+  userId     String
+  user       User      @relation(fields: [userId], references: [id])
+  chatRoomId String
+  chatRoom   ChatRoom  @relation(fields: [chatRoomId], references: [id], onDelete: Cascade)
+  joinedAt   DateTime  @default(now())
+  leftAt     DateTime?
+
+  @@id([userId, chatRoomId])
+}
+
+// Model untuk status dibaca pesan
+model MessageReadReceipt {
+  messageId String
+  message   ChatRoomMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User            @relation(fields: [userId], references: [id])
+  readAt    DateTime        @default(now())
+
+  @@id([messageId, userId])
+}
+
+// Model untuk status online pengguna
+model UserSession {
+  id           String   @id @default(uuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  socketId     String   @unique
+  isOnline     Boolean  @default(true)
+  lastActiveAt DateTime @default(now())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+// enum StorageProvider {
+//   LOCAL
+//   CLOUDINARY
+//   S3
+// }
+
+model Media {
+  id           String   @id @default(uuid())
+  name         String
+  originalName String
+  mimeType     String
+  size         Int // Dalam bytes
+  url          String
+  publicId     String? // Untuk cloudinary
+  // storage StorageProvider @default(LOCAL)
+  uploadedBy   String
+  uploader     User     @relation(fields: [uploadedBy], references: [id])
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relasi
+  contents    Content[]    @relation("ContentMedia")
+  assigments  Assigment[]  @relation("AssigmentMedia")
+  submissions Submission[] @relation("SubmissionMedia")
+}
+
+model Certificate {
+  id                String               @id @default(uuid())
+  enrollmentId      String               @unique
+  enrollment        Enrollment           @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  templateId        String?
+  template          CertificateTemplate? @relation(fields: [templateId], references: [id])
+  certificateNumber String               @unique
+  issuedAt          DateTime             @default(now())
+  expiresAt         DateTime?
+  pdfUrl            String? // URL ke file PDF sertifikat
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+}
+
+model CertificateTemplate {
+  id           String   @id @default(uuid())
+  name         String
+  description  String?  @db.Text
+  htmlTemplate String   @db.Text
+  cssStyles    String?  @db.Text
+  isDefault    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relasi
+  certificates Certificate[]
+}
+
+enum EmailStatus {
+  PENDING
+  SENT
+  FAILED
+  CANCELLED
+}
+
+model EmailNotification {
+  id           String         @id @default(uuid())
+  userId       String
+  user         User           @relation(fields: [userId], references: [id])
+  subject      String
+  body         String         @db.Text
+  status       EmailStatus    @default(PENDING)
+  scheduledFor DateTime?
+  sentAt       DateTime?
+  error        String?        @db.Text
+  templateId   String?
+  template     EmailTemplate? @relation(fields: [templateId], references: [id])
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+}
+
+model EmailTemplate {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?  @db.Text
+  subject     String
+  body        String   @db.Text
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relasi
+  notifications EmailNotification[]
+}
+
+enum TaskType {
+  EMAIL_REMINDER
+  COURSE_PUBLISH
+  CERTIFICATE_GENERATION
+  ENROLLMENT_EXPIRY
+  DATA_BACKUP
+  CUSTOM
+}
+
+model ScheduledTask {
+  id             String    @id @default(uuid())
+  name           String
+  type           TaskType
+  cronExpression String
+  data           Json?
+  isActive       Boolean   @default(true)
+  lastRun        DateTime?
+  nextRun        DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
+// model ApiKey {
+//   id                String           @id @default(uuid())
+//   key               String           @unique
+//   name              String
+//   userId            String
+//   user              User             @relation(fields: [userId], references: [id])
+//   isActive          Boolean          @default(true)
+//   expiresAt         DateTime?
+//   createdAt         DateTime         @default(now())
+//   updatedAt         DateTime         @updatedAt
+
+//   // Relasi
+//   usageLogs         ApiUsageLog[]
+// }
+
+// model ApiUsageLog {
+//   id                String           @id @default(uuid())
+//   apiKeyId          String?
+//   apiKey            ApiKey?          @relation(fields: [apiKeyId], references: [id], onDelete: SetNull)
+//   userId            String?
+//   user              User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
+//   endpoint          String
+//   method            String
+//   statusCode        Int
+//   responseTime      Int              // dalam milisecond
+//   ipAddress         String?
+//   userAgent         String?
+//   createdAt         DateTime         @default(now())
+// }
+
+// enum LoginStatus {
+//   SUCCESS
+//   FAILED
+//   BLOCKED
+// }
+
+// model LoginHistory {
+//   id                String           @id @default(uuid())
+//   userId            String
+//   user              User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+//   ipAddress         String?
+//   userAgent         String?
+//   device            String?
+//   location          String?
+//   status            LoginStatus      @default(SUCCESS)
+//   createdAt         DateTime         @default(now())
+// }
