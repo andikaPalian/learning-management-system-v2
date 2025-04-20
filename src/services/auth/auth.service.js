@@ -1,5 +1,4 @@
 import { PrismaClient } from "@prisma/client";
-import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import { AppError } from "../../utils/errorHandler.js";
 import { generateAccessToken, generateRefreshToken } from "../../utils/generateTokens.js";
