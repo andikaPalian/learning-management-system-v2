@@ -19,7 +19,7 @@ export const auth = async (req, res, next) => {
         // Verifikasi token
         let decoded;
         try {
-            decoded = jwt.verify(token, process.env.JWT_SECRET)
+            decoded = jwt.verify(token, process.env.ACCESS_SECRET)
         } catch (error) {
             return res.status(401).json({
                 message: error.name === "TokenExpiredError" ? "Unauthorized: Token has expired" : "Unauthorized: Invalid token"
