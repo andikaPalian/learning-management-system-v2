@@ -1,7 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import { AppError } from "../../utils/errorHandler.js";
 import {v2 as cloudinary} from "cloudinary";
-import fs from "fs";
+import fs from "fs/promises";
 
 const prisma = new PrismaClient();
 
@@ -60,7 +60,7 @@ export const editProfile = async (userId, data, file) => {
             avatarUrl = result.secure_url;
             avatarPublicUrl = result.public_id;
     
-            fs.unlinkSync(file.path);
+            await fs.unlinkSync(file.path);
         } catch (error) {
             throw new AppError("Failed to upload avatar", 500);
         }
