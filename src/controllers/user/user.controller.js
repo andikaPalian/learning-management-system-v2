@@ -25,11 +25,11 @@ export const editUserProfile = async (req, res, next) => {
 
         const updatedUser = await editProfile(userId, req.body, req.file);
 
-        if (user.id !== userId) {
-            return res.status(403).json({
-                message: "Unauthorized: only the user can edit their profile"
-            });
-        }
+        // if (updatedUser.id !== userId) {
+        //     return res.status(403).json({
+        //         message: "Unauthorized: only the user can edit their profile"
+        //     });
+        // }
 
         return res.status(200).json({
             message: "User profile updated successfully",

@@ -39,6 +39,10 @@ export const editProfile = async (userId, data, file) => {
         throw new AppError("user not found", 404)
     }
 
+    if (user.id !== userId) {
+        throw new AppError("Unauthorized: only the user can edit their profile", 403);
+    }
+
     if (user.username === username) {
         throw new AppError("username is same as before", 400);
     }
@@ -60,7 +64,7 @@ export const editProfile = async (userId, data, file) => {
             avatarUrl = result.secure_url;
             avatarPublicUrl = result.public_id;
     
-            await fs.unlinkSync(file.path);
+            await fs.unlink(file.path);
         } catch (error) {
             throw new AppError("Failed to upload avatar", 500);
         }
