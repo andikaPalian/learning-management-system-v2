@@ -17,7 +17,7 @@ export const createCourseController = async (req, res, next) => {
 
 export const listCourseController = async (req, res, next) => {
     try {
-        const courses = await listCourses();
+        const courses = await listCourses(req.query);
 
         return res.status(200).json(courses);
     } catch (error) {

@@ -3,6 +3,7 @@ import { AppError } from "../../utils/errorHandler.js";
 import slugify from "slugify";
 import {v2 as cloudinary} from "cloudinary";
 import fs from "fs/promises";
+import { skip } from "@prisma/client/runtime/library";
 
 const prisma = new PrismaClient();
 
@@ -111,27 +112,55 @@ export const createCourse = async (instructorId, {title, description, level, pri
     }
 };
 
-export const listCourses = async () => {
+export const listCourses = async ({search = "", page = 1, limit = 10}) => {
     try {
+        const pageNum = Number(page);
+        const limitNum = Number(limit);
+        const skip = (pageNum - 1) * limitNum;
+
         const courses = await prisma.course.findMany({
+            where: {
+                title: {
+                    contains: search,
+                    mode: "insensitive"
+                }
+            },
+            skip,
+            take: limitNum,
+            orderBy: {
+                createdAt: "desc"
+            },
             include: {
                 instructor: {
                     select: {
-                        username: true,
                         firstName: true,
                         lastName: true,
+                        username: true,
                         avatar: true
                     }
                 },
                 modules: true,
                 enrollments: true
-            },
-            orderBy: {
-                createdAt: "desc"
             }
         });
 
-        return courses;
+        const total = await prisma.course.count({
+            where: {
+                title: {
+                    contains: search,
+                    mode: "insensitive"
+                }
+            }
+        });
+
+        return {
+            courses: {
+                courses,
+                currentPage: pageNum,
+                totalPages: Math.ceil(total / limitNum),
+                totalItems: total
+            }
+        };
     } catch (error) {
         throw new AppError(`Failed to list courses: ${error.message}`, 500)
     }
