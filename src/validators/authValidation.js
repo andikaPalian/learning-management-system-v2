@@ -34,7 +34,7 @@ export const registerSchema = z.object({
   email: z.string().email({
     message: "Invalid email address",
   }),
-  passowrd: z.string().regex(passwordRegex, {
+  password: z.string().regex(passwordRegex, {
     message:
       "Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character.",
   }),
