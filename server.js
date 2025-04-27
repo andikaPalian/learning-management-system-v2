@@ -9,6 +9,7 @@ import { connectCloudinary } from "./src/utils/cloudinary.js";
 import authRouter from "./src/routes/auth/auth.routes.js";
 import userRouter from "./src/routes/user/user.routes.js";
 import courseRouter from "./src/routes/course/course.routes.js";
+import categoryRouter from "./src/routes/course/category.routes.js";
 
 const app = express();
 const port = process.env.PORT;
@@ -23,6 +24,7 @@ app.use(cookieParser());
 app.use("/api/auth", authRouter);
 app.use("/api/user", userRouter);
 app.use("/api/course", courseRouter);
+app.use("/api/category", categoryRouter);
 
 // Handle multer errors
 app.use((err, req, res, next) => {
