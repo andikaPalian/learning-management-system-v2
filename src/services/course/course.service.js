@@ -139,6 +139,15 @@ export const listCourses = async ({search = "", page = 1, limit = 10}) => {
                         avatar: true
                     }
                 },
+                categories: {
+                    select: {
+                        category: {
+                            select: {
+                                name: true
+                            }
+                        }
+                    }
+                },
                 modules: true,
                 enrollments: true
             }
@@ -179,6 +188,15 @@ export const getCourseById = async (courseId) => {
                         firstName: true,
                         lastName: true,
                         avatar: true
+                    }
+                },
+                categories: {
+                    select: {
+                        category: {
+                            select: {
+                                name: true
+                            }
+                        }
                     }
                 },
                 modules: true,
