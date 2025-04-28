@@ -148,7 +148,14 @@ export const listCourses = async ({search = "", page = 1, limit = 10}) => {
                         }
                     }
                 },
-                modules: true,
+                modules: {
+                    select: {
+                        id: true,
+                        title: true,
+                        description: true,
+                        order: true
+                    }
+                },
                 enrollments: true
             }
         });
@@ -199,7 +206,14 @@ export const getCourseById = async (courseId) => {
                         }
                     }
                 },
-                modules: true,
+                modules: {
+                    select: {
+                            id: true,
+                            title: true,
+                            description: true,
+                            order: true
+                    }
+                },
                 enrollments: true
             }
         });
