@@ -10,6 +10,7 @@ import authRouter from "./src/routes/auth/auth.routes.js";
 import userRouter from "./src/routes/user/user.routes.js";
 import courseRouter from "./src/routes/course/course.routes.js";
 import categoryRouter from "./src/routes/course/category.routes.js";
+import moduleRouter from "./src/routes/course/module.routes.js";
 
 const app = express();
 const port = process.env.PORT;
@@ -25,6 +26,7 @@ app.use("/api/auth", authRouter);
 app.use("/api/user", userRouter);
 app.use("/api/course", courseRouter);
 app.use("/api/category", categoryRouter);
+app.use("/api/module", moduleRouter);
 
 // Handle multer errors
 app.use((err, req, res, next) => {
