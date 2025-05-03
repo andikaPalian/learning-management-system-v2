@@ -180,6 +180,7 @@ model Content {
   title String
   type ContentType
   contentData String @db.Text // JSON atau URL ke konten
+  contentDataPublicId String? // Cloudinary public ID untuk konten
   duration Int? // Durasi dalam menit (untuk video/audio)
   order Int
   isPublished Boolean @default(false)

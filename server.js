@@ -11,6 +11,7 @@ import userRouter from "./src/routes/user/user.routes.js";
 import courseRouter from "./src/routes/course/course.routes.js";
 import categoryRouter from "./src/routes/course/category.routes.js";
 import moduleRouter from "./src/routes/course/module.routes.js";
+import contentRouter from "./src/routes/course/content.routes.js";
 
 const app = express();
 const port = process.env.PORT;
@@ -21,12 +22,14 @@ app.use(cors());
 app.use(express.json());
 app.use(morgan("dev"));
 app.use(cookieParser());
+app.use(express.urlencoded({extended: true}))
 
 app.use("/api/auth", authRouter);
 app.use("/api/user", userRouter);
 app.use("/api/course", courseRouter);
 app.use("/api/category", categoryRouter);
 app.use("/api/module", moduleRouter);
+app.use("/api/content", contentRouter);
 
 // Handle multer errors
 app.use((err, req, res, next) => {
