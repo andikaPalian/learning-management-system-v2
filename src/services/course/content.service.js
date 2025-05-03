@@ -416,6 +416,8 @@ export const getContentById = async (moduleId, contentId) => {
         if (!content) {
             throw new AppError("Content not found", 404);
         }
+
+        return content;
     } catch (error) {
         throw new AppError(`Failed to get content: ${error.message}`, 500);
     }
