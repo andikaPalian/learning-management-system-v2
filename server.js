@@ -13,6 +13,7 @@ import categoryRouter from "./src/routes/course/category.routes.js";
 import moduleRouter from "./src/routes/course/module.routes.js";
 import contentRouter from "./src/routes/course/content.routes.js";
 import quizRouter from "./src/routes/course/quiz.routes.js";
+import questionRouter from "./src/routes/course/question.routes.js";
 
 const app = express();
 const port = process.env.PORT;
@@ -32,6 +33,7 @@ app.use("/api/category", categoryRouter);
 app.use("/api/module", moduleRouter);
 app.use("/api/content", contentRouter);
 app.use("/api/quiz", quizRouter);
+app.use("/api/question", questionRouter);
 
 // Handle multer errors
 app.use((err, req, res, next) => {
