@@ -255,6 +255,7 @@ model QuizAttempt {
   startedAt DateTime @default(now())
   completedAt DateTime?
   score Float?
+  expiresAt DateTime?
   status AttemptStatus @default(IN_PROGRESS)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -283,6 +284,7 @@ enum EnrollmentStatus {
   ACTIVE
   COMPLETED
   DROPPED
+  REJECTED
   EXPIRED
 }
 
