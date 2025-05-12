@@ -277,6 +277,8 @@ model Answer {
   feedback String? @db.Text
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@unique([attemptId, questionId])
 }
 
 enum EnrollmentStatus {
