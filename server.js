@@ -17,6 +17,8 @@ import questionRouter from "./src/routes/course/question.routes.js";
 import quizAttemptsRouter from "./src/routes/course/quizAttempts.routes.js";
 import enrollmentRouter from "./src/routes/course/enrollment.routes.js";
 import answerRouter from "./src/routes/course/answer.routes.js";
+import assigmentRouter from "./src/routes/course/assigment.routes.js";
+import submissionRouter from "./src/routes/course/submission.routes.js";
 
 const app = express();
 const port = process.env.PORT;
@@ -40,6 +42,8 @@ app.use("/api/question", questionRouter);
 app.use("/api/attempts", quizAttemptsRouter);
 app.use("/api/enrollment", enrollmentRouter);
 app.use("/api/answer", answerRouter);
+app.use("/api/assigment", assigmentRouter);
+app.use("/api/submission", submissionRouter);
 
 // Handle multer errors
 app.use((err, req, res, next) => {
